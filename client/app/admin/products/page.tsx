@@ -16,13 +16,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -32,7 +25,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { ArrowUpDown, EditIcon, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 /* =======================
    TYPES
@@ -41,122 +46,267 @@ export type Product = {
   id: number;
   title: string;
   price: number;
+  description?: string;
   category: string;
   image: string;
 };
 
 /* =======================
-   TABLE COLUMNS
+   DELETE DIALOG
 ======================= */
-export const columns: ColumnDef<Product>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+function DeleteDialog({
+  item,
+  onDeleted,
+}: {
+  item: Product;
+  onDeleted: (id: number) => void;
+}) {
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`https://fakestoreapi.com/products/${item.id}`);
+      toast("Product deleted successfully");
+      onDeleted(item.id);
+    } catch {
+      toast("Failed to delete product");
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" className="bg-red-500">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Product?</DialogTitle>
+          <DialogDescription>Are you sure to Delete??</DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleDelete} className="bg-red-600">
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* =======================
+   PRODUCT FORM
+======================= */
+function ProductForm({
+  item,
+  onSuccess,
+}: {
+  item?: Product;
+  onSuccess: (product: Product) => void;
+}) {
+  const [formData, setFormData] = React.useState({
+    title: item?.title ?? "",
+    price: item?.price ?? 0,
+    description: item?.description ?? "",
+    category: item?.category ?? "",
+    image: item?.image ?? "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: id === "price" ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const res = item
+        ? await axios.put(
+            `https://fakestoreapi.com/products/${item.id}`,
+            formData
+          )
+        : await axios.post("https://fakestoreapi.com/products", formData);
+
+      toast(item ? "Product updated" : "Product added");
+      onSuccess(res.data);
+    } catch {
+      toast("Something went wrong");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <Input
+        id="title"
+        placeholder="Title"
+        value={formData.title}
+        onChange={handleChange}
       />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+      <Input
+        id="price"
+        type="number"
+        placeholder="Price"
+        value={formData.price}
+        onChange={handleChange}
       />
-    ),
-    enableSorting: false,
-  },
-  {
-    accessorKey: "image",
-    header: "Image",
-    cell: ({ row }) => (
-      <Image
-        src={row.getValue("image")}
-        alt="product"
-        width={40}
-        height={40}
-        className="rounded"
+      <textarea
+        id="description"
+        placeholder="Description"
+        value={formData.description}
+        onChange={handleChange}
+        className="border rounded-md p-2"
       />
-    ),
-  },
-  {
-    accessorKey: "title",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Product
-        <ArrowUpDown className="ml-2 h-4 w-4" />
+      <Input
+        id="category"
+        placeholder="Category"
+        value={formData.category}
+        onChange={handleChange}
+      />
+      <Input
+        id="image"
+        placeholder="Image URL"
+        value={formData.image}
+        onChange={handleChange}
+      />
+      <Button className="bg-indigo-700">
+        {item ? "Update Product" : "Add Product"}
       </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="max-w-xs truncate">{row.getValue("title")}</div>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => (
-      <span className="capitalize">{row.getValue("category")}</span>
-    ),
-  },
-  {
-    accessorKey: "price",
-    header: () => <div className="text-right">Price</div>,
-    cell: ({ row }) => {
-      const price = Number(row.getValue("price"));
-      return <div className="text-right font-medium">${price.toFixed(2)}</div>;
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const product = row.original;
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(String(product.id))}
-            >
-              Copy Product ID
-            </DropdownMenuItem>
-            <DropdownMenuItem>View Product</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
+    </form>
+  );
+}
+
+/* =======================
+   ADD / EDIT DIALOG
+======================= */
+function ProductDialog({
+  item,
+  onSuccess,
+}: {
+  item?: Product;
+  onSuccess: (product: Product) => void;
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        {item ? (
+          <Button variant="outline" size="icon">
+            <EditIcon className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button className="bg-indigo-600 hover:bg-indigo-800 ">
+            Add Product
+          </Button>
+        )}
+      </DialogTrigger>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{item ? "Edit Product" : "Add Product"}</DialogTitle>
+        </DialogHeader>
+
+        <ProductForm item={item} onSuccess={onSuccess} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /* =======================
    DATA TABLE
 ======================= */
-function DataTable({ data }: { data: Product[] }) {
+function DataTable({
+  data,
+  setData,
+}: {
+  data: Product[];
+  setData: React.Dispatch<React.SetStateAction<Product[]>>;
+}) {
   const [rowSelection, setRowSelection] = React.useState({});
+
+  const columns: ColumnDef<Product>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(v) => row.toggleSelected(!!v)}
+        />
+      ),
+    },
+    {
+      accessorKey: "image",
+      header: "Image",
+      cell: ({ row }) => (
+        <Image src={row.getValue("image")} alt="" width={40} height={40} />
+      ),
+    },
+    {
+      accessorKey: "title",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Product <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => `$${Number(row.getValue("price")).toFixed(2)}`,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex gap-2 justify-end">
+          <ProductDialog
+            item={row.original}
+            onSuccess={(updated) =>
+              setData((prev) =>
+                prev.map((p) => (p.id === updated.id ? updated : p))
+              )
+            }
+          />
+          <DeleteDialog
+            item={row.original}
+            onDeleted={(id) =>
+              setData((prev) => prev.filter((p) => p.id !== id))
+            }
+          />
+        </div>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data,
     columns,
-    state: {
-      rowSelection,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 6,
-      },
-    },
+    state: { rowSelection },
     onRowSelectionChange: setRowSelection,
+    initialState: {
+      pagination: { pageSize: 6 },
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -164,31 +314,31 @@ function DataTable({ data }: { data: Product[] }) {
   });
 
   return (
-    <div className="w-full px-5">
-      {/* Filter */}
-      <div className="flex items-center py-4">
+    <div className="px-5">
+      {/* Filter + Add */}
+      <div className="flex justify-between py-4">
         <Input
-          placeholder="Filter products..."
-          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+          placeholder="Search products..."
           onChange={(e) =>
             table.getColumn("title")?.setFilterValue(e.target.value)
           }
           className="max-w-sm"
         />
+
+        <ProductDialog
+          onSuccess={(product) => setData((prev) => [product, ...prev])}
+        />
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="border rounded-md">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
-                {group.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id}>
+                {hg.headers.map((h) => (
+                  <TableHead key={h.id}>
+                    {flexRender(h.column.columnDef.header, h.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -216,7 +366,7 @@ function DataTable({ data }: { data: Product[] }) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="text-center h-24"
                 >
                   No products found.
                 </TableCell>
@@ -264,22 +414,13 @@ export default function Products() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await axios.get<Product[]>(
-          "https://fakestoreapi.com/products"
-        );
-        setProducts(res.data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
+    axios
+      .get("https://fakestoreapi.com/products")
+      .then((res) => setProducts(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <p className="text-center mt-10">Loading products...</p>;
-  }
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
 
-  return <DataTable data={products} />;
+  return <DataTable data={products} setData={setProducts} />;
 }
