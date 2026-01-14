@@ -34,6 +34,9 @@ import {
 } from "@/components/ui/table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
+/* =======================
+   TYPES
+======================= */
 export type Product = {
   id: number;
   title: string;
@@ -50,14 +53,19 @@ export const columns: ColumnDef<Product>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
       />
     ),
     enableSorting: false,
@@ -132,12 +140,23 @@ export const columns: ColumnDef<Product>[] = [
 ];
 
 /* =======================
-   DATA TABLE COMPONENT
+   DATA TABLE
 ======================= */
 function DataTable({ data }: { data: Product[] }) {
+  const [rowSelection, setRowSelection] = React.useState({});
+
   const table = useReactTable({
     data,
     columns,
+    state: {
+      rowSelection,
+    },
+    initialState: {
+      pagination: {
+        pageSize: 6,
+      },
+    },
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -145,7 +164,8 @@ function DataTable({ data }: { data: Product[] }) {
   });
 
   return (
-    <div className="w-full ml-5 mr-4 ">
+    <div className="w-full px-5">
+      {/* Filter */}
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter products..."
@@ -157,6 +177,7 @@ function DataTable({ data }: { data: Product[] }) {
         />
       </div>
 
+      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -177,7 +198,10 @@ function DataTable({ data }: { data: Product[] }) {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -201,12 +225,39 @@ function DataTable({ data }: { data: Product[] }) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between py-4">
+        <div className="text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* =======================
-   PAGE COMPONENT
+   PAGE
 ======================= */
 export default function Products() {
   const [products, setProducts] = React.useState<Product[]>([]);

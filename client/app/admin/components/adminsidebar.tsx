@@ -24,7 +24,7 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="h-screen w-64 bg-gray-900 text-gray-200 flex flex-col shadow-lg">
+    <aside className="h-screen w-64 bg-indigo-600 text-gray-200 flex flex-col shadow-lg">
       <div className="px-6 py-5 text-2xl font-bold text-white">Admin Panel</div>
 
       <nav className="flex-1 px-3 space-y-1">
@@ -38,8 +38,8 @@ export default function AdminSidebar() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition
                 ${
                   isActive
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    ? "bg-indigo-900 text-white"
+                    : "text-gray-400 hover:bg-indigo-900 hover:text-white"
                 }`}
             >
               <item.icon className="h-5 w-5" />
