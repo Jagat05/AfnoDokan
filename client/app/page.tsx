@@ -1,3 +1,4 @@
+import Product from "@/components/cards";
 import HeroSection from "@/components/hero";
 import Header from "@/components/navbar";
 import React from "react";
@@ -7,6 +8,7 @@ const Home = () => {
     <div>
       <Header />
       <HeroSection />
+      <Product />
     </div>
   );
 };
