@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Image from "next/image";
 import { div } from "framer-motion/client";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: number;
@@ -18,6 +19,7 @@ const Product = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const getProducts = async () => {
@@ -70,7 +72,10 @@ const Product = () => {
 
             <p className="text-indigo-600 font-bold mt-2">${product.price}</p>
 
-            <button className="mt-auto bg-indigo-600 text-white rounded-xl py-2 hover:bg-indigo-700 transition">
+            <button
+              className="mt-auto bg-indigo-600 text-white rounded-xl py-2 hover:bg-indigo-700 transition"
+              onClick={() => router.push("/products/" + product.id)}
+            >
               View Product
             </button>
           </div>
