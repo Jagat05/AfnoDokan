@@ -45,7 +45,10 @@ export default function HeroSection() {
                 Register Now
                 <ArrowRight className="h-5 w-5" />
               </button>
-              <button className="inline-flex items-center gap-2 rounded-2xl border border-gray-300 px-6 py-3 text-gray-700 transition hover:bg-gray-50">
+              <button
+                className="inline-flex items-center gap-2 rounded-2xl border border-gray-300 px-6 py-3 text-gray-700 transition hover:bg-gray-50"
+                onClick={() => router.push("/products")}
+              >
                 Explore Products
               </button>
             </div>
