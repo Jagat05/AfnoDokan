@@ -77,15 +77,15 @@ This project demonstrates frontend architecture, reusable components, form handl
 
 ##  Users
 
-🚧 Get all users
+✅ Get all users
 
-🚧 Add a new user
+✅ Add a new user
 
 ✅ Get a single user
 
-🚧 Update a user
+✅ Update a user
 
-🚧 Delete a user
+✅ Delete a user
 
 ## Auth
 
